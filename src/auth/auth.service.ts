@@ -16,7 +16,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     @InjectRepository(User) private readonly userRepository: Repository<User>,
   ) {}
-
+  //회원가입서비스 - 이메일,비밀번호,비밀번호확인,닉네임,나이,프로필이미지
   async signUp({
     email,
     password,
@@ -51,7 +51,8 @@ export class AuthService {
 
     return this.signIn(user.id);
   }
-
+  //로그인 서비스
+  //로그인하면 jwt 엑세스토큰 발급
   signIn(userId: number) {
     const payload = { id: userId };
     const accessToken = this.jwtService.sign(payload);

@@ -20,7 +20,10 @@ export class PostService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
   ) {}
-
+  //포스트 작성
+  // CreatePostDto에서 이미지 제목 내용 공개제한 2가지형태를 고른후에 포스팅
+  // visible - 일반 , R-18
+  // role - 전체 공개 , 구독자 전용 공개 , 비공개
   async createPost(createPostDto: CreatePostDto, user: User): Promise<Posts> {
     const { image, title, content, visible, role } = createPostDto;
     // const { id } = user;
@@ -47,6 +50,8 @@ export class PostService {
     }
     return user;
   }
+  //포스트 목록 조회
+  // 구동안되는 부분들많은듯
 
   async getPosts(user?: User): Promise<
     {
@@ -106,46 +111,47 @@ export class PostService {
 
     return query.getRawMany();
   }
-
+  //포스트 상세내용조회 /posts/:postsId
   async getPostById(id: number, user?: User): Promise<GetPostDto> {
+    console.log('getPostById 메서드 실행 중...');
+
+    // 사용자 객체와 포스트 ID 확인
+    console.log('사용자 객체:', user);
+    console.log('포스트 ID:', id);
+
+    // 포스트 조회
     const post = await this.postsRepository.findOne({
       where: { id },
-      relations: ['user'],
+      relations: ['user', 'comments', 'comments.user'], // comments를 포함하여 조회
     });
+
+    console.log('데이터베이스에서 조회한 포스트:', post);
 
     if (!post) {
       throw new NotFoundException(`게시물을 찾을 수 없습니다`);
     }
 
-    // 로그인하지 않았거나, 포스트가 성인용이며 사용자가 미성년자인 경우 - 전혀 작동안함
-    if (post.visible === Visibility.R18 && (!user || user.age <= 20)) {
-      throw new NotFoundException(`미성년자는 이 콘텐츠를 볼 수 없습니다.`);
+    // 로그인하지 않았거나, 포스트가 성인용이며 사용자가 미성년자인 경우
+    if (post.visible !== Visibility.ALL) {
+      if (!user || user.age <= 20) {
+        throw new NotFoundException(`미성년자는 이 콘텐츠를 볼 수 없습니다.`);
+      }
     }
 
-    // 비공개 포스트이며, 사용자가 포스트의 소유자가 아닌 경우 -유일하게 잘작동
+    // 비공개 포스트이며, 사용자가 포스트의 소유자가 아닌 경우
     if (
       post.role === PostStatus.PRIVATE &&
-      (!user || post.user.id !== user.id)
+      (!user || (user.role !== 'Admin' && post.user.id !== user.id))
     ) {
       throw new NotFoundException(`이 포스트는 비공개입니다.`);
     }
 
-    // 어드민이거나 포스트의 소유자인 경우, 그 외의 접근 제한이 없거나 만족하는 경우 포스트 반환
-    if (user && (user.role === 'Admin' || post.user.id === user.id)) {
-      return this.mapToDto(post);
-    }
-
-    // 공개 포스트인 경우
-    if (post.visible === Visibility.ALL) {
-      return this.mapToDto(post);
-    }
-
-    // 위의 모든 조건에 해당하지 않는 경우, 포스트 접근 권한이 없는 것으로 간주
-    throw new NotFoundException(`이 포스트에 대한 접근 권한이 없습니다.`);
+    // 포스트와 코멘트를 DTO로 매핑하여 반환
+    return this.mapToDto(post);
   }
 
   private mapToDto(post: Posts): GetPostDto {
-    return {
+    const dto: GetPostDto = {
       id: post.id,
       image: post.image,
       title: post.title,
@@ -153,11 +159,26 @@ export class PostService {
       visible: post.visible,
       role: post.role,
       like: post.like,
-      userNickname: post.user.nickname,
-      userProfileImage: post.user.profileImage,
+      userNickname: post.user ? post.user.nickname : null, // 사용자 객체가 존재할 때에만 닉네임 가져오기
+      userProfileImage: post.user ? post.user.profileImage : null, // 사용자 객체가 존재할 때에만 프로필 이미지 가져오기
+      comments: [], // 기본적으로 빈 배열로 초기화
     };
+
+    // 코멘트가 있는 경우에만 매핑
+    if (post.comments) {
+      dto.comments = post.comments.map((comment) => ({
+        id: comment.id,
+        commenterNickname: comment.user ? comment.user.nickname : null,
+        commenterProfileImage: comment.user ? comment.user.profileImage : null,
+        content: comment.content,
+      }));
+    }
+
+    return dto; // 여기서 반환하도록 수정
   }
 
+  //포스트 수정
+  //수정할수있는 항목 - 이미지, 제목,내용,공개설정,권한설정
   async updatePost(
     id: number,
     updatePostDto: UpdatePostDto,
@@ -181,7 +202,7 @@ export class PostService {
       role,
     });
   }
-
+  //포스트 삭제
   async deletePost(id: number, user: User): Promise<void> {
     const post = await this.postsRepository.findOne({
       where: { id, user: { id: user.id } },

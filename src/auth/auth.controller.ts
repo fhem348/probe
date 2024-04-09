@@ -15,7 +15,7 @@ import { AuthGuard } from '@nestjs/passport';
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
-
+  //회원가입 메소드
   @Post('/sign-up')
   async signUp(@Body() signUpDto: SignUpDto) {
     const data = await this.authService.signUp(signUpDto);
@@ -24,8 +24,7 @@ export class AuthController {
       message: '회원가입에 성공했습니다.',
       data,
     };
-  }
-
+  } //로그인 메소드
   @HttpCode(HttpStatus.OK)
   @UseGuards(AuthGuard('local'))
   @Post('/sign-in')

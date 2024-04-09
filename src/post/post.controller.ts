@@ -22,6 +22,7 @@ import { UpdatePostDto } from './dtos/update-post.dto';
 export class PostController {
   constructor(private postService: PostService) {}
 
+  //포스트작성 JWT가드로 유저정보불러옴
   @UseGuards(JwtAuthGuard)
   @Post()
   @UsePipes(ValidationPipe)
@@ -36,7 +37,7 @@ export class PostController {
       data: post,
     };
   }
-
+  //포스트목록조회
   @Get()
   async getPosts(@userInfo() user: User): Promise<any> {
     const posts = await this.postService.getPosts(user);
@@ -47,8 +48,10 @@ export class PostController {
       data: posts,
     };
   }
+  //포스트 상세조회
   @UseGuards(JwtAuthGuard)
   @Get('/:id')
+  @UsePipes(ValidationPipe)
   async getPostById(
     @Param('id') id: string,
     @userInfo() user?: User,
@@ -61,7 +64,7 @@ export class PostController {
       data: posts,
     };
   }
-
+  //포스트수정
   @UseGuards(JwtAuthGuard)
   @Patch('/:id')
   @UsePipes(ValidationPipe)
@@ -81,7 +84,7 @@ export class PostController {
       data: updatedPost,
     };
   }
-
+  //포스트삭제
   @UseGuards(JwtAuthGuard)
   @Delete('/:id')
   async deletePost(

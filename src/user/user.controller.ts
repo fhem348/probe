@@ -20,6 +20,7 @@ import { userInfo } from 'src/utils/userInfo.decorator';
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
+  //내 프로필 조회 가드가있어 베어러토큰넣어줘야함
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Get('me')
@@ -32,9 +33,8 @@ export class UserController {
       data,
     };
   }
-
+  //사용자조회 가드없음 유저아이디찾아서 조회가능
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
   @Get(':id')
   async findUserById(@Param('id', ParseIntPipe) id: number) {
     const user = await this.userService.findUserById(id);
@@ -44,7 +44,7 @@ export class UserController {
       data: user,
     };
   }
-
+  //내 정보 수정
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Patch('me')
@@ -62,7 +62,7 @@ export class UserController {
       data: updatedUser,
     };
   }
-
+  //회원탈퇴
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Delete('me')

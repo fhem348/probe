@@ -1,3 +1,4 @@
+import { GetCommentDto } from 'src/comment/dto/get-commnet.dto';
 import { PostStatus, Visibility } from '../types/poststatus-role.type';
 
 export class GetPostDto {
@@ -10,4 +11,5 @@ export class GetPostDto {
   like: number;
   userNickname: string;
   userProfileImage: string;
+  comments: GetCommentDto[];
 }
